@@ -139,6 +139,37 @@ def headers(account: BrokerAccount) -> dict[str, str]:
         "Authorization": "Bearer " + unseal(account.jwt_enc),
     }
 
+def refresh_session(account: BrokerAccount) -> bool:
+    """Refresh an expired JWT using the encrypted refresh token; never expose it."""
+    try:
+        response = requests.post(
+            BROKER_ROOT + "/rest/auth/angelbroking/jwt/v1/generateTokens",
+            headers={"Content-Type": "application/json", "Accept": "application/json", "X-PrivateKey": unseal(account.api_key_enc), "X-UserType": "USER", "X-SourceID": "WEB", "X-MACAddress": "00:00:00:00:00:00"},
+            json={"refreshToken": unseal(account.refresh_enc)}, timeout=15,
+        )
+        result = response.json()
+        if response.status_code >= 400 or not result.get("status"):
+            return False
+        data = result.get("data") or {}
+        if data.get("jwtToken"):
+            account.jwt_enc = seal(data["jwtToken"])
+        if data.get("refreshToken"):
+            account.refresh_enc = seal(data["refreshToken"])
+        if data.get("feedToken"):
+            account.feed_enc = seal(data["feedToken"])
+        account.last_seen_at = datetime.now(timezone.utc)
+        with SessionLocal() as db:
+            stored = db.get(BrokerAccount, account.id)
+            if stored:
+                stored.jwt_enc = account.jwt_enc
+                stored.refresh_enc = account.refresh_enc
+                stored.feed_enc = account.feed_enc
+                stored.last_seen_at = account.last_seen_at
+                db.commit()
+        return bool(data.get("jwtToken"))
+    except (requests.RequestException, ValueError, HTTPException):
+        return False
+
 def broker_request(account: BrokerAccount, method: str, path: str, payload: dict | None = None) -> dict[str, Any]:
     # Broker API calls are made server-side; never expose JWT/API keys to the browser.
     try:
@@ -148,8 +179,13 @@ def broker_request(account: BrokerAccount, method: str, path: str, payload: dict
         raise HTTPException(502, f"Angel One network error: {type(exc).__name__}")
     except ValueError:
         raise HTTPException(502, "Angel One returned a non-JSON response.")
+    if response.status_code == 401 or data.get("errorcode") in {"AG8001", "AG8002", "AG8003"}:
+        if refresh_session(account):
+            response = requests.request(method, BROKER_ROOT + path, headers=headers(account), json=payload, timeout=15)
+            data = response.json()
     if response.status_code >= 400 or data.get("status") is False:
         raise HTTPException(502, {"broker_status": response.status_code, "message": data.get("message", "Angel One request failed"), "errorcode": data.get("errorcode")})
+    account.last_seen_at = datetime.now(timezone.utc)
     return data
 
 def account_or_404(db, account_id: str) -> BrokerAccount:
