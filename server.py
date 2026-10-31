@@ -300,8 +300,8 @@ def holdings(account_id: str, db=Depends(db_session)):
     return broker_request(account_or_404(db, account_id), "GET", "/rest/secure/angelbroking/portfolio/v1/getHolding")
 
 @app.get("/api/accounts/{account_id}/quote", dependencies=[Depends(require_app_token)])
-def quote(account_id: str, exchange: str, symboltoken: str, db=Depends(db_session)):
-    return broker_request(account_or_404(db, account_id), "POST", "/rest/secure/angelbroking/order/v1/getLtpData", {"exchange": exchange, "tradingsymbol": "", "symboltoken": symboltoken})
+def quote(account_id: str, exchange: str, tradingsymbol: str, symboltoken: str, db=Depends(db_session)):
+    return broker_request(account_or_404(db, account_id), "POST", "/rest/secure/angelbroking/order/v1/getLtpData", {"exchange": exchange, "tradingsymbol": tradingsymbol, "symboltoken": symboltoken})
 
 @app.post("/api/orders/master", dependencies=[Depends(require_app_token)])
 def place_master_order(body: OrderRequest, db=Depends(db_session)):
