@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: golden-brother-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    disk:
+      name: golden-brother-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:////var/data/golden_brother.db
+      - key: LIVE_TRADING_ENABLED
+        value: "false"
+      - key: APP_API_TOKEN
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://your-frontend-domain.example

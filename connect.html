@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Golden Brother · Secure Broker Connections</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#111c2e;--line:#293b55;--text:#edf4ff;--muted:#91a4bd;--blue:#5b9cff;--green:#24c78a;--red:#ff6878}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,Segoe UI,sans-serif}.wrap{max-width:1050px;margin:36px auto;padding:0 18px}.head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}.head h1{margin:0;font-size:25px}.muted{color:var(--muted);font-size:12px}.tag{border:1px solid #66572c;background:#302a19;color:#f1d992;border-radius:20px;padding:8px 12px;font-size:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}.card h2{font-size:16px;margin:0 0 15px}.field{display:grid;gap:6px;margin-bottom:12px;color:var(--muted);font-size:12px}.field input{background:#0b1627;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:11px;width:100%}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.check{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;margin:10px 0}.btn{background:var(--blue);color:#081426;border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}.btn.alt{background:#20334e;color:var(--text);border:1px solid var(--line)}.btn:disabled{opacity:.5;cursor:wait}.notice{background:#2b2518;border:1px solid #66572c;color:#f1d992;border-radius:9px;padding:12px;font-size:12px;line-height:1.55;margin-top:14px}.status{margin-top:12px;font-size:12px;white-space:pre-wrap}.account{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.account:last-child{border:0}.account small{display:block;color:var(--muted);margin-top:4px}.pill{font-size:11px;color:var(--green)}.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.output{background:#0b1627;border:1px solid var(--line);border-radius:8px;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted);font-size:12px;max-height:220px;overflow:auto}@media(max-width:720px){.grid{grid-template-columns:1fr}.wrap{margin:20px auto}}
+</style></head><body><main class="wrap">
+<header class="head"><div><h1>GOLDEN BROTHER</h1><div class="muted">Angel One SmartAPI · Secure account management</div></div><span class="tag">LIVE ORDERS DISABLED BY DEFAULT</span></header>
+<div class="notice"><b>Security:</b> Deploy the API over HTTPS and keep it private. Never share your Angel One PIN, OTP/TOTP, API key or this application token in chat, email or GitHub. Each account holder must authorize their own account. PIN/TOTP are sent once to your backend for login and are not stored by this app. Tokens are encrypted in the backend database.</div>
+<section class="grid">
+<div class="card"><h2>1 · Connect to your backend</h2>
+<label class="field">Backend URL<input id="base" placeholder="https://your-render-service.onrender.com"></label>
+<label class="field">Application API token<input id="appToken" type="password" autocomplete="off" placeholder="Render APP_API_TOKEN"></label>
+<div class="row"><button class="btn" id="save">Connect & load accounts</button><button class="btn alt" id="clear">Clear</button></div><div class="status" id="connectionStatus" aria-live="polite"></div>
+</div>
+<div class="card"><h2>2 · Add Angel One account</h2>
+<form id="connectForm">
+<label class="field">Account label<input name="label" required minlength="2" placeholder="Main account / Family member"></label>
+<label class="field">Angel One client code<input name="client_code" required autocomplete="off"></label>
+<label class="field">SmartAPI key<input name="api_key" required type="password" autocomplete="off"></label>
+<label class="field">Angel One trading PIN<input name="pin" required type="password" autocomplete="off"></label>
+<label class="field">Authenticator TOTP<input name="totp" required inputmode="numeric" minlength="6" maxlength="8" autocomplete="one-time-code"></label>
+<label class="check"><input name="account_owner_consent" type="checkbox" required> I confirm the account holder has authorized this connection.</label>
+<label class="check"><input name="make_master" type="checkbox"> Set as the master account (only one master allowed).</label>
+<button class="btn" type="submit">Securely connect account</button><div class="status" id="connectStatus" aria-live="polite"></div>
+</form></div>
+<div class="card"><h2>3 · Connected accounts</h2><div id="accounts" class="muted">Connect to your backend to load accounts.</div><div class="tools"><button class="btn alt" id="reload">Refresh accounts</button></div></div>
+<div class="card"><h2>4 · Account data check</h2><label class="field">Select account ID<input id="accountId" placeholder="Select from connected accounts"></label><div class="tools"><button class="btn alt" data-action="profile">Profile</button><button class="btn alt" data-action="funds">Funds</button><button class="btn alt" data-action="orders">Orders</button><button class="btn alt" data-action="positions">Positions</button><button class="btn alt" data-action="holdings">Holdings</button></div><div class="output" id="accountData">API responses will appear here.</div></div>
+</section>
+<section class="card" style="margin-top:16px"><h2>5 · Master order execution</h2>
+<div class="notice">Real-money order endpoint. It remains blocked while LIVE_TRADING_ENABLED=false on the server. Always verify symbol token, quantity, product type and estimated price. Follower orders can fill differently from the master.</div>
+<form id="liveOrderForm" class="grid" style="margin-top:14px">
+<label class="field">Master account ID<input name="master_account_id" id="masterId" required placeholder="Select the master account above"></label>
+<label class="field">Trading symbol<input name="tradingsymbol" required placeholder="RELIANCE-EQ"></label>
+<label class="field">Symbol token<input name="symboltoken" required placeholder="2885"></label>
+<label class="field">Exchange<input name="exchange" value="NSE" required></label>
+<label class="field">Side<select name="transactiontype"><option>BUY</option><option>SELL</option></select></label>
+<label class="field">Order type<select name="ordertype"><option>LIMIT</option><option>MARKET</option><option>STOPLOSS_LIMIT</option><option>STOPLOSS_MARKET</option></select></label>
+<label class="field">Product type<select name="producttype"><option>DELIVERY</option><option>INTRADAY</option><option>MARGIN</option><option>CARRYFORWARD</option></select></label>
+<label class="field">Quantity<input name="quantity" type="number" min="1" max="1000000" value="1" required></label>
+<label class="field">Limit price / estimated price for market cap check<input name="price" type="number" min="0" step="0.05" value="1" required></label>
+<label class="field">Trigger price (if applicable)<input name="triggerprice" type="number" min="0" step="0.05" value="0"></label>
+<label class="check"><input name="copy_to_followers" type="checkbox"> Also copy to follower accounts that have opted in.</label>
+<label class="check"><input name="confirm_live" type="checkbox" required> I confirm this is a real-money order and have checked all details.</label>
+<div class="wide"><button class="btn" type="submit">Submit master order</button><div class="status" id="liveOrderStatus" aria-live="polite"></div></div>
+</form><div class="muted">Master order notional safety ceiling: ₹1,00,000. Follower limits are configured separately. Live order API remains disabled by default.</div>
+</section>
+<p class="muted">This interface does not make trading orders. Live order execution is available only through the protected backend endpoint after you explicitly enable it in server configuration and pass live confirmation.</p>
+</main>
+<script>
+let apiBase='', appToken='';
+const $=id=>document.getElementById(id);
+function status(id,msg,error=false){$(id).textContent=msg;$(id).style.color=error?'#ff6878':'#24c78a'}
+async function api(path,options={}){if(!apiBase||!appToken)throw new Error('Connect to backend first.');const res=await fetch(apiBase+path,{...options,headers:{'Content-Type':'application/json','Authorization':'Bearer '+appToken,...(options.headers||{})}});const data=await res.json().catch(()=>({detail:'Invalid server response'}));if(!res.ok)throw new Error(typeof data.detail==='string'?data.detail:JSON.stringify(data.detail||data));return data}
+$('save').onclick=async()=>{apiBase=$('base').value.trim().replace(/\/$/,'');appToken=$('appToken').value;try{const h=await fetch(apiBase+'/health');if(!h.ok)throw new Error('Backend health check failed');const data=await h.json();status('connectionStatus','Backend reachable · live trading '+(data.live_trading_enabled?'ENABLED':'disabled'));await loadAccounts()}catch(e){status('connectionStatus',e.message,true)}};
+$('clear').onclick=()=>{apiBase='';appToken='';$('appToken').value='';$('accounts').textContent='Credentials cleared from this page.';status('connectionStatus','Disconnected')};
+$('reload').onclick=()=>loadAccounts();
+async function loadAccounts(){try{const rows=await api('/api/accounts');$('accounts').innerHTML='';if(!rows.length){$('accounts').textContent='No accounts connected yet.';return}for(const a of rows){const div=document.createElement('div');div.className='account';const left=document.createElement('div');left.innerHTML='<b></b><small></small>';left.querySelector('b').textContent=a.label+(a.is_master?' · MASTER':'');left.querySelector('small').textContent=a.client_code+' · '+a.id;const right=document.createElement('div');right.innerHTML='<label class="check"><input type="checkbox"> Copy trades</label><button class="btn alt">Use ID</button>';const box=right.querySelector('input');box.checked=a.copy_enabled;box.disabled=a.is_master;box.onchange=async()=>{try{await api('/api/accounts/'+a.id+'/copy-settings',{method:'PATCH',body:JSON.stringify({enabled:box.checked,multiplier:a.multiplier||1,max_order_value:a.max_order_value||10000})})}catch(e){box.checked=!box.checked;alert(e.message)}};right.querySelector('button').onclick=()=>{$('accountId').value=a.id;if(a.is_master)$('masterId').value=a.id;};div.append(left,right);$('accounts').append(div)}}catch(e){$('accounts').textContent=e.message}}
+$('connectForm').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget;const v=Object.fromEntries(new FormData(form));v.account_owner_consent=form.account_owner_consent.checked;v.make_master=form.make_master.checked;try{const result=await api('/api/accounts/connect',{method:'POST',body:JSON.stringify(v)});status('connectStatus','Connected: '+result.label+' ('+result.client_code+')');form.reset();await loadAccounts()}catch(err){status('connectStatus',err.message,true)}};
+
+$('liveOrderForm').onsubmit=async e=>{e.preventDefault();const f=e.currentTarget;const v=Object.fromEntries(new FormData(f));v.quantity=Number(v.quantity);v.price=Number(v.price);v.triggerprice=Number(v.triggerprice);v.copy_to_followers=f.copy_to_followers.checked;v.confirm_live=f.confirm_live.checked;try{const result=await api('/api/orders/master',{method:'POST',body:JSON.stringify(v)});status('liveOrderStatus',JSON.stringify(result,null,2));}catch(err){status('liveOrderStatus',err.message,true)}};
+\ndocument.querySelectorAll('[data-action]').forEach(b=>b.onclick=async()=>{try{const id=$('accountId').value.trim();if(!id)throw new Error('Select an account ID first.');const data=await api('/api/accounts/'+id+'/'+b.dataset.action);$('accountData').textContent=JSON.stringify(data,null,2)}catch(e){$('accountData').textContent=e.message}});
+</script></body></html>
