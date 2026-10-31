@@ -16,6 +16,7 @@ A web-based Angel One SmartAPI workspace for one master trading account and sepa
 - JWT refresh: `/rest/auth/angelbroking/jwt/v1/generateTokens`.
 - Profile, funds/RMS, order book, positions and holdings.
 - LTP quote polling.
+- Per-account trade book and live account summary endpoints, plus an all-account dashboard snapshot with independent section error reporting.
 - Master order submission and optional follower replication to opted-in accounts.
 
 Official references: [SmartAPI authentication and WebSocket documentation](https://smartapi.angelone.in/docs/ResponseStructure), [API endpoints, order and market-data reference](https://smartapi.angelone.in/docs/Exceptions), [rate limits and postbacks](https://smartapi.angelone.in/docs/Edis/).
@@ -32,6 +33,8 @@ Official references: [SmartAPI authentication and WebSocket documentation](https
 - Copy trading cannot guarantee identical fills: follower orders may be rejected, delayed, partially filled or executed at different prices.
 - Not yet included: SmartAPI WebSocket streaming, broker postback signature verification, automated partial-fill reconciliation, multi-tenant authentication, and production-grade distributed rate limiting. Do not treat this as a finished unattended trading system.
 - Live orders are **disabled by default**. Keep them disabled until you have tested safely and confirmed applicable Angel One/exchange/regulatory requirements.
+
+See [BACKEND_SETUP.md](BACKEND_SETUP.md) for the deployment and live-account verification checklist.
 
 ## Deploy on Render
 
@@ -65,6 +68,9 @@ All `/api/*` endpoints require `Authorization: Bearer APP_API_TOKEN`.
 - `DELETE /api/accounts/{id}` — disconnect/remove a stored session.
 - `GET /api/accounts/{id}/profile|funds|orders|positions|holdings` — account data.
 - `GET /api/accounts/{id}/quote?exchange=NSE&tradingsymbol=SBIN-EQ&symboltoken=3045` — LTP quote.
+- `GET /api/accounts/{id}/trades` — trade book.
+- `GET /api/accounts/{id}/summary` — profile, funds, positions, holdings, orders and trades.
+- `GET /api/dashboard` — live summaries for all connected accounts.
 - `POST /api/orders/master` — guarded live order endpoint; requires server live flag and explicit confirmation.
 - `GET /api/copy-orders` — follower execution log.
 

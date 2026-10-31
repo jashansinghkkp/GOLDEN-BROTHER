@@ -363,3 +363,42 @@ def place_master_order(body: OrderRequest, db=Depends(db_session)):
 def copy_orders(db=Depends(db_session)):
     rows = db.scalars(select(CopyOrder).order_by(CopyOrder.created_at.desc()).limit(200)).all()
     return [{"id": r.id, "master_order_id": r.master_order_id, "follower_account_id": r.follower_account_id, "follower_order_id": r.follower_order_id, "status": r.status, "detail": r.detail, "created_at": r.created_at.isoformat()} for r in rows]
+
+
+@app.get("/api/accounts/{account_id}/trades", dependencies=[Depends(require_app_token)])
+def trades(account_id: str, db=Depends(db_session)):
+    """Return Angel One's broker trade book for this account."""
+    return broker_request(account_or_404(db, account_id), "GET", "/rest/secure/angelbroking/order/v1/getTradeBook")
+
+@app.get("/api/accounts/{account_id}/summary", dependencies=[Depends(require_app_token)])
+def account_summary(account_id: str, db=Depends(db_session)):
+    """Fetch a live account snapshot; each section reports its own broker error."""
+    account = account_or_404(db, account_id)
+    checks = {
+        "profile": ("GET", "/rest/secure/angelbroking/user/v1/getProfile", None),
+        "funds": ("GET", "/rest/secure/angelbroking/user/v1/getRMS", None),
+        "positions": ("GET", "/rest/secure/angelbroking/order/v1/getPosition", None),
+        "holdings": ("GET", "/rest/secure/angelbroking/portfolio/v1/getHolding", None),
+        "orders": ("GET", "/rest/secure/angelbroking/order/v1/getOrderBook", None),
+        "trades": ("GET", "/rest/secure/angelbroking/order/v1/getTradeBook", None),
+    }
+    snapshot = {"account_id": account.id, "label": account.label, "client_code": account.client_code_masked, "is_master": account.is_master, "fetched_at": datetime.now(timezone.utc).isoformat(), "data": {}, "errors": {}}
+    for key, (method, path, payload) in checks.items():
+        try:
+            snapshot["data"][key] = broker_request(account, method, path, payload)
+        except HTTPException as exc:
+            snapshot["errors"][key] = exc.detail
+    db.commit()
+    return snapshot
+
+@app.get("/api/dashboard", dependencies=[Depends(require_app_token)])
+def dashboard(db=Depends(db_session)):
+    """Fetch live summaries for every connected account without masking partial failures."""
+    rows = db.scalars(select(BrokerAccount).order_by(BrokerAccount.is_master.desc(), BrokerAccount.connected_at.asc())).all()
+    result = {"service": APP_NAME, "live_trading_enabled": os.getenv("LIVE_TRADING_ENABLED", "false").lower() == "true", "accounts": []}
+    for account in rows:
+        try:
+            result["accounts"].append(account_summary(account.id, db))
+        except HTTPException as exc:
+            result["accounts"].append({"account_id": account.id, "label": account.label, "client_code": account.client_code_masked, "is_master": account.is_master, "errors": {"summary": exc.detail}})
+    return result
