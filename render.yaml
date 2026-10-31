@@ -17,6 +17,6 @@ services:
       - key: APP_API_TOKEN
         generateValue: true
       - key: ENCRYPTION_KEY
-        generateValue: true
+        sync: false
       - key: CORS_ORIGINS
         value: https://your-frontend-domain.example
