@@ -320,6 +320,10 @@ def place_master_order(body: OrderRequest, db=Depends(db_session)):
         raise HTTPException(400, "Unsupported order type.")
     if body.producttype not in {"DELIVERY", "INTRADAY", "MARGIN", "CARRYFORWARD", "BO"}:
         raise HTTPException(400, "Unsupported product type.")
+    if body.ordertype in {"LIMIT", "STOPLOSS_LIMIT"} and body.price <= 0:
+        raise HTTPException(400, "Limit orders require a positive limit price.")
+    if body.ordertype in {"STOPLOSS_LIMIT", "STOPLOSS_MARKET"} and body.triggerprice <= 0:
+        raise HTTPException(400, "Stop-loss orders require a positive trigger price.")
     master = account_or_404(db, body.master_account_id)
     if not master.is_master:
         raise HTTPException(400, "Selected account is not configured as master.")
