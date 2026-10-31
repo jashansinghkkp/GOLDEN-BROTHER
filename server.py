@@ -204,7 +204,7 @@ def place_for_account(db, account: BrokerAccount, master_payload: dict, quantity
         "ordertype": master_payload["ordertype"],
         "producttype": master_payload["producttype"],
         "duration": master_payload["duration"],
-        "price": str(master_payload["price"]),
+        "price": "0" if master_payload["ordertype"] in {"MARKET", "STOPLOSS_MARKET"} else str(master_payload["price"]),
         "triggerprice": str(master_payload["triggerprice"]),
         "quantity": str(quantity),
         "ordertag": tag[:19],
@@ -276,6 +276,11 @@ def make_master(account_id: str, db=Depends(db_session)):
 @app.delete("/api/accounts/{account_id}", dependencies=[Depends(require_app_token)])
 def disconnect_account(account_id: str, db=Depends(db_session)):
     account = account_or_404(db, account_id)
+    # Best-effort broker logout before deleting the encrypted local session.
+    try:
+        broker_request(account, "POST", "/rest/secure/angelbroking/user/v1/logout", {"clientcode": unseal(account.client_code_enc)})
+    except HTTPException:
+        pass
     db.delete(account); db.commit()
     return {"disconnected": True, "id": account_id}
 
