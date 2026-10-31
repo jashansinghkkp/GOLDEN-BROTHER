@@ -47,7 +47,7 @@ Official references: [SmartAPI authentication and WebSocket documentation](https
    Add the output as Render secret `ENCRYPTION_KEY`. Back it up securely; losing it makes stored sessions undecryptable.
 7. Set `CORS_ORIGINS` to the exact HTTPS origin hosting `connect.html` (no trailing slash).
 8. Keep `LIVE_TRADING_ENABLED=false`.
-9. Open `https://YOUR-SERVICE.onrender.com/health`, then open `connect.html`, enter backend URL and app token, and connect each account separately.
+9. Open `https://YOUR-SERVICE.onrender.com/health` to verify the API, then open `https://YOUR-SERVICE.onrender.com/connect` for the connection dashboard. Enter the backend URL and app token, then connect each account separately. The main dashboard is served at `/`.
 10. Check profile/funds/orders/positions/holdings before considering any real order execution.
 
 ## Environment
